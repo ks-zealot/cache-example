@@ -9,6 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryCacheManager implements CacheManager {
     private Map m = new ConcurrentHashMap<>();//inmemorycache
+    protected InMemoryCacheManager(){
+
+    }
     @Override
     public  void putObject(Object key, Serializable object) {
         m.put(key, object);
@@ -17,8 +20,8 @@ public class InMemoryCacheManager implements CacheManager {
 
 
     @Override
-    public   Object getObject(Object key) {
-        return m.get(key);
+    public   Serializable getObject(Object key) {
+        return (Serializable) m.get(key);
     }
 
     @Override
@@ -27,8 +30,15 @@ public class InMemoryCacheManager implements CacheManager {
     }
 
     @Override
-    public void delete(Object key) {
-        m.remove(key);
+    public boolean delete(Object key) {
+        if (ifExist(key)){
+            m.remove(key);
+            return true;
+        } else{
+            return false;
+        }
+
+
     }
 
     @Override

@@ -51,13 +51,14 @@ public class CacheManagerImplTest {
         TestObject obj = new TestObject("1");
         manager.putObject("1", obj);
         expectLastCall();
-        manager.delete("1");
-        expectLastCall();
-        expect(manager.ifExist("1")).andReturn(true);
+        expect(manager.delete("1")).andReturn(true).anyTimes();
+        expect(manager.ifExist("1")).andReturn(true).anyTimes();
         replay(manager);
         cache.putObject("1", obj);
         Thread.sleep(2000);
         verify(manager);
         //////
     }
+
+
 }

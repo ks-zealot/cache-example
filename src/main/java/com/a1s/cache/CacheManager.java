@@ -7,8 +7,8 @@ import java.io.Serializable;
  */
 public interface  CacheManager <K, V extends Serializable> {
       void  putObject(K key, V object);
-      Object getObject(K key);
+      V getObject(K key);
       void clear();
-      void delete(K key);
+      boolean delete(K key);
       boolean ifExist(K key);
 }

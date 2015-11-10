@@ -6,12 +6,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by y.lybarskiy on 09.11.2015.
@@ -20,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 public class FileSysCacheManagerTest {
     @TestSubject
     FileSysCacheManager fileSysCacheManager = new FileSysCacheManager("tmp");
-    private final CountDownLatch countDownLatch  = new CountDownLatch(1);
     @Test
     public void test() {
         File f = new File("tmp");
@@ -28,57 +27,122 @@ public class FileSysCacheManagerTest {
         File f1 = new File("tmp" + File.separator + "1");
         fileSysCacheManager.putObject("1", new TestObject("1"));
         assertTrue(f1.exists());
-        TestObject o = (TestObject) fileSysCacheManager.getObject("1");
+        TestObject o  = (TestObject) fileSysCacheManager.getObject("1");
         assertEquals("1", o.getField());
-        fileSysCacheManager.delete("1");
-
-        assertTrue(!f1.exists());
 
     }
 
     @Test
-    public void testConcurrent() {
+    public void testConcurrent() throws InterruptedException {
         File f = new File("tmp");
         f.mkdirs();
-        for (int i = 0; i < 100; i++) {
+        CountDownLatch countDownLatch = new CountDownLatch(150);
+        for (int i = 0; i< 150; i++) {
+             new Thread(new Runnable() {
+                 @Override
+                 public void run()
+                 {
+                     fileSysCacheManager.putObject("key", new TestObject("key"));
+                    countDownLatch.countDown();
+                 }
+             }).start();
+        }
+        countDownLatch.await();
+        TestObject test = (TestObject) fileSysCacheManager.getObject("key");
+        assertEquals("key", test.getField());
+
+    }
+
+
+    @Test
+    public void testConcurrentGet() throws InterruptedException {
+        File f = new File("tmp");
+        f.mkdirs();
+        CountDownLatch countDownLatch = new CountDownLatch(150);
+        fileSysCacheManager.putObject("testkey", new TestObject("testkey"));
+
+        for (int i = 0; i< 150; i++) {
             new Thread(new Runnable() {
                 @Override
-                public void run() {
-                    fileSysCacheManager.putObject("key", new TestObject("key"));
+                public void run()
+                {
+                    fileSysCacheManager.getObject("testkey");
+                    countDownLatch.countDown();
                 }
             }).start();
         }
+        countDownLatch.await();
+
     }
     @Test
-    public void testConcurrent1() {
+    public void testConcurrentDelete() throws InterruptedException {
         File f = new File("tmp");
         f.mkdirs();
-        fileSysCacheManager.putObject("key", new TestObject("key"));
-        List<Thread> threads = new ArrayList();
-        for (int i = 0; i < 150; i++) {
-        Thread t =     new Thread(
-
-             ) {
-            public void run() {
-                try {
-                    countDownLatch.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        CountDownLatch countDownLatch = new CountDownLatch(150);
+        fileSysCacheManager.putObject("testdelete", new TestObject("testdelete"));
+        for (int i = 0; i< 150; i++) {
+            new Thread(new Runnable() {
+                @Override
+                public void run()
+                {
+                    fileSysCacheManager.delete("testdelete");
+                    countDownLatch.countDown();
                 }
-                fileSysCacheManager.delete("key" );
-            } };
-            threads.add(t);
-        }countDownLatch.countDown();
-        for (Thread t : threads){
-            t.start();
+            }).start();
         }
+        countDownLatch.await();
+
+    }
+
+
+    @Test
+    public void testDeleteSingle() throws InterruptedException {
+        File f = new File("tmp");
+        f.mkdirs();
+        fileSysCacheManager.putObject("testdeletesingle", new TestObject("testdeletesingle"));
+
+        fileSysCacheManager.delete("testdeletesingle");
+
+    }
+
+
+    @Test
+    public void testClear() throws InterruptedException {
+        File f = new File("tmp");
+        f.mkdirs();
+        CountDownLatch countDownLatch = new CountDownLatch(150);
+        for (int i = 0; i< 150; i++) {
+            new Thread(new Runnable() {
+                @Override
+                public void run()
+                {
+                    fileSysCacheManager.putObject("key", new TestObject("key"));
+                    countDownLatch.countDown();
+                }
+            }).start();
+        }
+        fileSysCacheManager.clear();
+        countDownLatch.await();
+
     }
 
     @Test
-    public void test1() {
+    public void testClear1() throws InterruptedException {
         File f = new File("tmp");
         f.mkdirs();
-         fileSysCacheManager.putObject(new TestObject("key"), new TestObject("value"));
-
+        fileSysCacheManager.clear();
+    }
+    @Test
+    public void testClearAbandoned() throws InterruptedException {
+        File f = new File("tmp");
+        f.mkdirs();
+        fileSysCacheManager.putObject("1", new TestObject("1"));
+        fileSysCacheManager.delete("1");
+        assertNull(fileSysCacheManager.getObject("1"));//not present in cache
+        File f1 = new File("tmp" + File.separator + "1");
+        assertTrue(f1.exists()); // but file exist
+        Thread.sleep(5000);
+        assertFalse(f1.exists()); // not anymore
+        fileSysCacheManager.clear();
     }
 }
