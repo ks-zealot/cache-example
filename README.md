@@ -8,8 +8,8 @@
  переполняется, то кладутся в кэш, являющийся надстройкой над  файловой системой
  #Настройки
  Кэш использует файл cache.xml
- ```
- <?xml version="1.0" encoding="ISO-8859-1" ?>
+     ```
+     <?xml version="1.0" encoding="ISO-8859-1" ?>
      <caches>
          <cache>
              <name>cache1</name>
@@ -20,7 +20,7 @@
              <delay>10</delay>
          </cache>
      </caches>
- ```
+     ```
      где
      * name - имя кэша. Обязательное значени
      * maxSizeFirstLevel - размер inmemory кэша, по умолчанию 10
