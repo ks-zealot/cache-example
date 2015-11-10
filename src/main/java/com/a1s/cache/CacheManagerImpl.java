@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by y.lybarskiy on 09.11.2015.
  */
-public class CacheManagerImpl  implements CacheManager {
+public final class CacheManagerImpl  implements CacheManager {
     private final Logger log = LoggerFactory.getLogger(CacheManagerImpl.class);
     private int maxSizeFirstLevel = 0;
     private int maxSizeSecondLevel= 0;
@@ -33,7 +33,9 @@ public class CacheManagerImpl  implements CacheManager {
     public void setTtl(long ttl) {
         this.ttl = ttl;
     }
+    protected CacheManagerImpl() {
 
+    }
 private String path;
 
     public void setPath(String path) {

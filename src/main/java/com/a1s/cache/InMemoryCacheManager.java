@@ -9,6 +9,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryCacheManager implements CacheManager {
     private Map m = new ConcurrentHashMap<>();//inmemorycache
+    protected InMemoryCacheManager(){
+
+    }
     @Override
     public  void putObject(Object key, Serializable object) {
         m.put(key, object);

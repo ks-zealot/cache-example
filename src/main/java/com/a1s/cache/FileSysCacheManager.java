@@ -28,7 +28,7 @@ public class FileSysCacheManager implements CacheManager {
     private static final class Lock {
     }
 
-    public FileSysCacheManager(String path) {
+    protected FileSysCacheManager(String path) {
         this.path = path;
         clearer.scheduleWithFixedDelay(new Runnable() {
             @Override
