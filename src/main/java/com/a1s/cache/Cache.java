@@ -35,7 +35,7 @@ public final class Cache {
     }
 
 
-    public CacheManager getCache(String name) throws ConfigurationException, ParserConfigurationException, SAXException, IOException {
+    public synchronized CacheManager getCache(String name) throws ConfigurationException, ParserConfigurationException, SAXException, IOException {
         if (!isInit) {
             config = new XmlConfig();
             config.init();
