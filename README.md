@@ -20,7 +20,7 @@
              <delay>10</delay>
          </cache>
      </caches>
-    ```
+ ```
      где
      * name - имя кэша. Обязательное значени
      * maxSizeFirstLevel - размер inmemory кэша, по умолчанию 10
