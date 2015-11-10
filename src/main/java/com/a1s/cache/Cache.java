@@ -29,7 +29,7 @@ public final class Cache {
     private Cache(){
 
     }
-    public Cache getInstance ()
+    public synchronized Cache getInstance ()
     {
         return cache;
     }
