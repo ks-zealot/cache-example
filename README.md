@@ -35,8 +35,8 @@
   * slf4j - обертка движка логирования
 
   #Использование
-  Cache.getInstance().getCache()
-  Cache.getInstance.getCache("cache1")
-  new CacheBuilder().setDelay(10)
+ * Cache.getInstance().getCache()
+ * Cache.getInstance.getCache("cache1")
+ * new CacheBuilder().setDelay(10)
   .setPath("tmp").setTtl(100).setMaxSecondLevelSize(10)
   .setMaxFirstLevelSize(100).build();
