@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 
@@ -18,12 +19,27 @@ public class InMemoryCacheManagerTest {
     InMemoryCacheManager cacheManager = new InMemoryCacheManager();
     @Test
     public void test() {
-        File f = new File("tmp");
-        f.mkdirs();
         cacheManager.putObject("1", new TestObject("1"));
         TestObject o  = (TestObject) cacheManager.getObject("1");
         assertEquals("1", o.getField());
         cacheManager.delete("1");
         assertNull(cacheManager.getObject("1"));
+    }
+    @Test
+    public void testConcurrent() throws InterruptedException {
+
+        CountDownLatch countDownLatch = new CountDownLatch(150);
+        for (int i = 0; i< 150; i++) {
+            new Thread(new Runnable() {
+                @Override
+                public void run()
+                {
+                    cacheManager.putObject("1", new TestObject("1"));
+                    TestObject o  = (TestObject) cacheManager.getObject("1");
+                    countDownLatch.countDown();
+                }
+            }).start();
+        }
+        countDownLatch.await();
     }
 }

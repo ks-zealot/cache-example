@@ -16,7 +16,4 @@ public class TestObject implements Serializable {
         return field;
     }
 
-    public void setField(String field) {
-        this.field = field;
-    }
 }

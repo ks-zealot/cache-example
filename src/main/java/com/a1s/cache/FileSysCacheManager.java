@@ -4,11 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -17,52 +20,99 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class FileSysCacheManager implements CacheManager {
     private String path;
     private Logger log = LoggerFactory.getLogger(FileSysCacheManager.class);
-    private AtomicBoolean isWriteInProgress = new AtomicBoolean(false);
     private List keys = new CopyOnWriteArrayList<>();
-    public FileSysCacheManager(String stringProperty) {
-        path = stringProperty;
+    private final Object lock = new Lock();
+    private final AtomicBoolean onClear = new AtomicBoolean(false);
+    private ThreadPoolExecutor writeService = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+    private ScheduledExecutorService clearer = Executors.newSingleThreadScheduledExecutor();
+    private static final class Lock {
     }
 
-    public void setPath(String path) {
+    public FileSysCacheManager(String path) {
         this.path = path;
+        clearer.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+            clearAbandonedFiles();
+            }
+        },5, 5, TimeUnit.SECONDS);
     }
+
 
     @Override
     public void putObject(Object key, Serializable object) {
+        while (onClear.get()) {
+            try {
+                log.debug("wait til clear finished");
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                log.error("error", e);
+            }
+        }
+        log.debug("write object with key {}", key);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = null;
-        FileOutputStream oos = null;
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(object);
             byte[] bytes = bos.toByteArray();
-            oos =  new FileOutputStream(path + File.separator + key) ;
-            isWriteInProgress.set(true);
-            oos.write(bytes);
+            File file = new File(path + File.separator + key);
+            Future future = writeService.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        final FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+                        channel.write(ByteBuffer.wrap(bytes));
+                        channel.close();
+                    } catch (IOException ioe) {
+                        log.debug("error", ioe);
+                    }
+                }
+            });
+            future.get();
         } catch (IOException e) {
+            log.error("error", e);
+        } catch (InterruptedException e) {
+            log.error("error", e);
+        } catch (ExecutionException e) {
             log.error("error", e);
         } finally {
             try {
-                if (bos != null)
-                bos.close();
-                if (oos != null)
-                oos.close();
+                if (out != null)
+                    out.close();
             } catch (IOException e) {
                 log.error("error", e);
             }
             keys.add(key);
-            isWriteInProgress.set(false);
+        }
+    }
+    private void clearAbandonedFiles(){
+        File[] files = new File(path).listFiles();
+        List<String> keyNames = new ArrayList<>();
+        for (Object o : keys) {
+            keyNames.add(o.toString());
+        }
+        for (File file : files){
+            if (!keyNames.contains(file.getName())){
+                log.debug("abandoned file {}", file.getName());
+                try {
+                    Files.deleteIfExists(Paths.get(file.getPath()));
+                } catch (IOException e) {
+                    log.debug("error", e);
+                }
+            }
         }
     }
 
     @Override
-    public Object getObject(Object key) {
+    public Serializable getObject(Object key) {
+        if (!keys.contains(key)){
+            return null;
+        }
         ByteArrayInputStream bos = null;
         ObjectInput in = null;
         Object obj = null;
-        FileInputStream oos = null;
         try {
-            oos =  new FileInputStream(path + File.separator + key) ;
             byte[] bytes = Files.readAllBytes(Paths.get(path + File.separator + key));
             bos = new ByteArrayInputStream(bytes);
             in = new ObjectInputStream(bos);
@@ -73,36 +123,62 @@ public class FileSysCacheManager implements CacheManager {
             log.error("error", e);
         } finally {
             try {
+                if (in != null)
+                    in.close();
                 if (bos != null)
                     bos.close();
-                if (oos != null)
-                    oos.close();
             } catch (IOException e) {
-               log.error("error", e);
+                log.error("error", e);
             }
         }
-        return obj;
+        return (Serializable) obj;
     }
 
     @Override
     public void clear() {
-        while (!isWriteInProgress.get()) {
-            //wait until all stream finished
+        onClear.compareAndSet(false, true);
+        synchronized (lock) {
+            while (writeService.getActiveCount() != 0 || writeService.getQueue().size() != 0) {
+                try {
+                    log.debug("wait until all task finished");
+                    lock.wait(5);
+                } catch (InterruptedException e) {
+                    log.error("error", e);
+                }
+            }
         }
-        File f = new File(path);
-        f.delete();
+        log.debug("start clear cache, on clear now true");
+        try {
+            File dir = new File(path);
+            for (final File f : dir.listFiles()) {
+                Path path = Paths.get(f.getPath());
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            log.debug("error", e);
+        } finally {
+            log.debug("clear task just finished");
+            onClear.compareAndSet(true, false);
+        }
     }
 
     @Override
-    public void delete(Object key) {
-        File file = new File(path + File.separator + key);
-        file.delete();
-        keys.remove(key);
+    public boolean delete(Object key) {
+//        try {
+
+          return  keys.remove(key);
+//            Path filePath = Paths.get(path + File.separator + key);
+//            return Files.deleteIfExists(filePath);
+//        } catch (IOException e) {
+//            log.error("error", e);
+//            return false;
+//        }
+
     }
 
     @Override
     public boolean ifExist(Object key) {
-      return  keys.contains(key);
+        return keys.contains(key);
     }
 
 

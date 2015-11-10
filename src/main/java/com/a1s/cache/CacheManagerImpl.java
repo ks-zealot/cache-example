@@ -34,7 +34,11 @@ public class CacheManagerImpl  implements CacheManager {
         this.ttl = ttl;
     }
 
+private String path;
 
+    public void setPath(String path) {
+        this.path = path;
+    }
 
     public void setDelay(int delay) {
         this.delay = delay;
@@ -54,20 +58,31 @@ public class CacheManagerImpl  implements CacheManager {
         if ( !path.exists()){
             path.mkdirs();
         }
-        if (delay == 0)
+        if (delay == 0) {
             delay = Config.getIntProperty("delay");
-        if (maxSizeFirstLevel == 0)
-        maxSizeFirstLevel = Config.getIntProperty("maxSizeFirstLevel");
-        if (maxSizeSecondLevel == 0)
-        maxSizeSecondLevel = Config.getIntProperty("maxSizeSecondLevel");
-        if (ttl == 0)
-        ttl = Config.getLongProperty("ttl");
-        if (inMemoryCacheManager == null)
-        inMemoryCacheManager = new InMemoryCacheManager();
-        if (fileSysCacheManager == null)
-        fileSysCacheManager = new FileSysCacheManager(Config.getStringProperty("filesystem.path"));
+        }
+        if (maxSizeFirstLevel == 0) {
+            maxSizeFirstLevel = Config.getIntProperty("maxSizeFirstLevel");
+        }
+        if (maxSizeSecondLevel == 0) {
+            maxSizeSecondLevel = Config.getIntProperty("maxSizeSecondLevel");
+        }
+        if (ttl == 0) {
+            ttl = Config.getLongProperty("ttl");
+        }
+        if (inMemoryCacheManager == null) {
+            inMemoryCacheManager = new InMemoryCacheManager();
+        }
+        if (fileSysCacheManager == null) {
+            if (path != null) {
+                fileSysCacheManager = new FileSysCacheManager(this.path);
+            } else {
+                fileSysCacheManager = new FileSysCacheManager("tmp");
+            }
+
+        }
         log.info("start cache with params : maxSizeFirstLevel {}, maxSizeSecondLevel {}, ttl {}, fs path to store {}, delay",
-                maxSizeFirstLevel, maxSizeSecondLevel, ttl,Config.getStringProperty("filesystem.path"), delay );
+                maxSizeFirstLevel, maxSizeSecondLevel, ttl, Config.getStringProperty("filesystem.path"), delay);
         clearer.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -115,8 +130,8 @@ public class CacheManagerImpl  implements CacheManager {
     }
 
     @Override
-    public Object getObject(Object key) {
-        Object o = inMemoryCacheManager.getObject(key);
+    public Serializable getObject(Object key) {
+        Serializable o = inMemoryCacheManager.getObject(key);
         if (o == null) {
             log.debug("retrieve object with key {} from fs cache", key);
             o = fileSysCacheManager.getObject(key);
@@ -134,15 +149,17 @@ public class CacheManagerImpl  implements CacheManager {
     }
 
     @Override
-    public void delete(Object key) {
+    public boolean delete(Object key) {
         if (inMemoryCacheManager.ifExist(key)) {
             log.debug("delete object with key {} from inmemory cache", key);
-            inMemoryCacheManager.delete(key);
-        }
-        if (fileSysCacheManager.ifExist(key)) {
+            return inMemoryCacheManager.delete(key);
+        } else if (fileSysCacheManager.ifExist(key)) {
             log.debug("delete object with key {} from fs cache", key);
-            fileSysCacheManager.delete(key);
+           return fileSysCacheManager.delete(key);
+        } else {
+            return false;
         }
+
     }
 
     @Override
