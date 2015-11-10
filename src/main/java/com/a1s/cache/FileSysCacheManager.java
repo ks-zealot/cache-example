@@ -32,6 +32,7 @@ public class FileSysCacheManager implements CacheManager {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = null;
         FileOutputStream oos = null;
+        log.debug("put object with key {}", key);
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(object);
@@ -95,6 +96,7 @@ public class FileSysCacheManager implements CacheManager {
 
     @Override
     public void delete(Object key) {
+        log.debug("delete object with key {}", key);
         File file = new File(path + File.separator + key);
         file.delete();
         keys.remove(key);
