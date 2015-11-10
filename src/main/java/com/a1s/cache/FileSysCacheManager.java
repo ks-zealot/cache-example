@@ -25,6 +25,13 @@ public class FileSysCacheManager implements CacheManager {
     private final AtomicBoolean onClear = new AtomicBoolean(false);
     private ThreadPoolExecutor writeService = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
     private ScheduledExecutorService clearer = Executors.newSingleThreadScheduledExecutor();
+
+    public void shutdown() {
+        writeService.shutdown();
+        clearer.shutdown();
+
+    }
+
     private static final class Lock {
     }
 
@@ -33,13 +40,13 @@ public class FileSysCacheManager implements CacheManager {
         clearer.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-            try {
-                clearAbandonedFiles();
-            } catch (Exception e) {
-                //do nothing, will remove next time
+                try {
+                    clearAbandonedFiles();
+                } catch (Exception e) {
+                    //do nothing, will remove next time
+                }
             }
-            }
-        },5, 5, TimeUnit.SECONDS);
+        }, 5, 5, TimeUnit.SECONDS);
     }
 
 

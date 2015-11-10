@@ -34,8 +34,5 @@ private Logger log = LoggerFactory.getLogger(XmlLocator.class);
         return result;
     }
 
-    public static void main(String[] args) {
-        XmlLocator locator = new XmlLocator();
-        System.out.println(locator.locate());
-    }
+
 }

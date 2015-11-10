@@ -1,7 +1,6 @@
 package com.a1s.cache;
 
 import junit.framework.TestCase;
-import org.apache.commons.configuration.ConfigurationException;
 import org.easymock.EasyMockRunner;
 import org.easymock.TestSubject;
 import org.junit.Test;
@@ -17,10 +16,10 @@ import java.io.IOException;
 @RunWith(EasyMockRunner.class)
 public class CacheTest extends TestCase {
     @TestSubject
-    Cache cache = new Cache();
+    Cache cache =   Cache.getInstance();
 
     @Test
-    public void test() throws ParserConfigurationException, SAXException, ConfigurationException, IOException {
+    public void test() throws ParserConfigurationException, SAXException,   IOException {
      assertNotNull(cache.getCache("cache1"));
     }
 }

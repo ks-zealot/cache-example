@@ -20,11 +20,21 @@ private XmlConfig xmlConfig = new XmlConfig();
     @Test
     public void test() throws ParserConfigurationException, SAXException, IOException {
         xmlConfig.init();
-    CacheBean bean = xmlConfig.getCacheBean("cache1");
+         CacheBean bean = xmlConfig.getCacheBean("cache1");
         assertEquals(bean.getDelay(), 10);
         assertEquals(bean.getPath(), "tmp");
         assertEquals(bean.getTtl(), 100);
         assertEquals(bean.getMaxFirstLevelSize(), 100);
         assertEquals(bean.getMaxSecondLevelSize(), 10000);
 }
+    @Test
+    public void testGetDefault() throws ParserConfigurationException, SAXException, IOException {
+        xmlConfig.init();
+        CacheBean bean = xmlConfig.getCacheBean("cache2");
+        assertEquals(bean.getDelay(), 10);
+        assertEquals(bean.getPath(), "tmp");
+        assertEquals(bean.getTtl(), 100);
+        assertEquals(bean.getMaxFirstLevelSize(), 100);
+        assertEquals(bean.getMaxSecondLevelSize(), 100);
+    }
 }

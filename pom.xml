@@ -13,16 +13,6 @@
         <log4j.version>2.3</log4j.version>
     </properties>
     <dependencies>
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.10</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-collections</groupId>
-            <artifactId>commons-collections</artifactId>
-            <version>3.2.1</version>
-        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>

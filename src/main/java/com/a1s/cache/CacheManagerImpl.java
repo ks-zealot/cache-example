@@ -1,7 +1,5 @@
 package com.a1s.cache;
 
-import com.a1s.cache.config.Config;
-import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,15 +11,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by y.lybarskiy on 09.11.2015.
  */
-public final class CacheManagerImpl  implements CacheManager {
+public final class CacheManagerImpl implements CacheManager {
     private final Logger log = LoggerFactory.getLogger(CacheManagerImpl.class);
     private int maxSizeFirstLevel = 0;
-    private int maxSizeSecondLevel= 0;
+    private int maxSizeSecondLevel = 0;
     private InMemoryCacheManager inMemoryCacheManager;
     private FileSysCacheManager fileSysCacheManager;
     private final AtomicInteger inMemorySize = new AtomicInteger(0);
@@ -30,47 +29,40 @@ public final class CacheManagerImpl  implements CacheManager {
     private long ttl = 0;
     private final ScheduledExecutorService clearer = Executors.newSingleThreadScheduledExecutor();
     private int delay = 0;
+    private AtomicBoolean isStarted = new AtomicBoolean(false);
     public void setTtl(long ttl) {
         this.ttl = ttl;
     }
+
     protected CacheManagerImpl() {
 
     }
-private String path;
 
-    public void setPath(String path) {
+    private String path;
+
+    protected void setPath(String path) {
         this.path = path;
     }
 
-    public void setDelay(int delay) {
+    protected void setDelay(int delay) {
         this.delay = delay;
     }
 
-    public void setMaxSizeFirstLevel(int maxSizeFirstLevel) {
+    protected void setMaxSizeFirstLevel(int maxSizeFirstLevel) {
         this.maxSizeFirstLevel = maxSizeFirstLevel;
     }
 
-    public void setMaxSizeSecondLevel(int maxSizeSecondLevel) {
+    protected void setMaxSizeSecondLevel(int maxSizeSecondLevel) {
         this.maxSizeSecondLevel = maxSizeSecondLevel;
     }
 
-    public void init() throws ConfigurationException {
-        Config.init();
-        File path = new File(Config.getStringProperty("filesystem.path"));
-        if ( !path.exists()){
-            path.mkdirs();
-        }
-        if (delay == 0) {
-            delay = Config.getIntProperty("delay");
-        }
-        if (maxSizeFirstLevel == 0) {
-            maxSizeFirstLevel = Config.getIntProperty("maxSizeFirstLevel");
-        }
-        if (maxSizeSecondLevel == 0) {
-            maxSizeSecondLevel = Config.getIntProperty("maxSizeSecondLevel");
-        }
-        if (ttl == 0) {
-            ttl = Config.getLongProperty("ttl");
+    /*
+    init cache manager, all inner resources and start support thread
+     */
+    public void init() {
+        File innerStore = new File(path);
+        if (!innerStore.exists()) {
+            innerStore.mkdirs();
         }
         if (inMemoryCacheManager == null) {
             inMemoryCacheManager = new InMemoryCacheManager();
@@ -84,7 +76,7 @@ private String path;
 
         }
         log.info("start cache with params : maxSizeFirstLevel {}, maxSizeSecondLevel {}, ttl {}, fs path to store {}, delay",
-                maxSizeFirstLevel, maxSizeSecondLevel, ttl, Config.getStringProperty("filesystem.path"), delay);
+                maxSizeFirstLevel, maxSizeSecondLevel, ttl, path, delay);
         clearer.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
@@ -103,42 +95,56 @@ private String path;
                 }
             }
         }, 0, delay, TimeUnit.SECONDS);
+        isStarted.compareAndSet(false, true);
     }
-
+/*
+stop cache, shut down threads
+ */
     public void stop() {
+        isStarted.compareAndSet(true, false);
         clear();
         clearer.shutdown();
+        fileSysCacheManager.shutdown();
     }
+/*
+put object in cache
 
+ */
     @Override
     public void putObject(Object key, Serializable object) {
+        if (!isStarted.get()){
+            log.debug("cache already stopped, drop object with key {}", key);
+            return;
+        }
         log.debug("put object with key {}", key);
         if (inMemorySize.get() < maxSizeFirstLevel) {
             inMemorySize.incrementAndGet();
             log.debug("put object inmemory level");
             inMemoryCacheManager.putObject(key, object);
             expiredMap.put(key, new Date());
-            log.debug("put object key {} in expiration map", key );
+            log.debug("put object key {} in expiration map", key);
         } else if (onDiskSize.get() < maxSizeSecondLevel) {
             log.debug("inmemory cache overloaded");
             onDiskSize.incrementAndGet();
             log.debug("put object in file level");
             fileSysCacheManager.putObject(key, object);
             expiredMap.put(key, new Date());
-            log.debug("put object key {} in expiration map", key );
+            log.debug("put object key {} in expiration map", key);
         } else {
             log.debug("all caches overloaded, object with key {} was dropped", key);
         }
     }
+/*
 
+get object for passed key or null if object does not exist
+ */
     @Override
     public Serializable getObject(Object key) {
         Serializable o = inMemoryCacheManager.getObject(key);
         if (o == null) {
             log.debug("retrieve object with key {} from fs cache", key);
             o = fileSysCacheManager.getObject(key);
-        }
-        else {
+        } else {
             log.debug("retrieve object with key {} from inmemory cache", key);
         }
         return o;
@@ -149,7 +155,9 @@ private String path;
         inMemoryCacheManager.clear();
         fileSysCacheManager.clear();
     }
-
+/*
+delete from cache object with specific key
+ */
     @Override
     public boolean delete(Object key) {
         if (inMemoryCacheManager.ifExist(key)) {
@@ -157,13 +165,16 @@ private String path;
             return inMemoryCacheManager.delete(key);
         } else if (fileSysCacheManager.ifExist(key)) {
             log.debug("delete object with key {} from fs cache", key);
-           return fileSysCacheManager.delete(key);
+            return fileSysCacheManager.delete(key);
         } else {
             return false;
         }
 
     }
+/*
+retuen true if object with this key exist, false otherwise
 
+ */
     @Override
     public boolean ifExist(Object key) {
         return inMemoryCacheManager.ifExist(key) || fileSysCacheManager.ifExist(key);

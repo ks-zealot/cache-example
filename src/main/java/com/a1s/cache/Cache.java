@@ -1,9 +1,7 @@
 package com.a1s.cache;
 
 import com.a1s.cache.config.CacheBean;
-import com.a1s.cache.config.Config;
 import com.a1s.cache.config.XmlConfig;
-import org.apache.commons.configuration.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -29,13 +27,21 @@ public final class Cache {
     private Cache(){
 
     }
-    public synchronized Cache getInstance ()
+    public static synchronized Cache getInstance ()
     {
         return cache;
     }
 
-
-    public synchronized CacheManager getCache(String name) throws ConfigurationException, ParserConfigurationException, SAXException, IOException {
+    /**
+     * get named cache. if cache retrieveed at first time, class perfrom configuration
+     * return default cache if no such cache described in xml file
+     * @param name
+     * @return
+     * @throws ParserConfigurationException if errors perform during parse xml
+     * @throws SAXException xml file corrupt or not created properly
+     * @throws IOException if could not find or load file
+     */
+    public synchronized CacheManager getCache(String name) throws   ParserConfigurationException, SAXException, IOException {
         if (!isInit) {
             config = new XmlConfig();
             config.init();
@@ -59,18 +65,30 @@ public final class Cache {
                 log.debug("create cache manager with configuration {}", bean);
                 cachces.put(name, createManager(bean));
             }
-            return cachces.get(name);
-        } else {
-            return manager;
+            manager = cachces.get(name);
+            manager.init();
         }
+            return manager;
 
     }
-
-    private CacheManagerImpl getCache() {
+    /*
+    get cache with default parameters
+     */
+    public CacheManagerImpl getCache() {
        return createManager(defaultBean);
 
     }
-
+    /*
+    return cache bean implementation from passed bean
+     */
+protected CacheManagerImpl getCache(CacheBean bean){
+    return createManager(bean);
+}
+    /**
+     * create cache manager from bean configuration
+     * @param bean configuration bean
+     * @return new cache manager implementation
+     */
     private CacheManagerImpl createManager(CacheBean bean) {
         CacheManagerImpl manager  = new CacheManagerImpl();
         manager.setDelay(bean.getDelay());
@@ -78,6 +96,7 @@ public final class Cache {
         manager.setMaxSizeSecondLevel(bean.getMaxSecondLevelSize());
         manager.setMaxSizeFirstLevel(bean.getMaxFirstLevelSize());
         manager.setPath(bean.getPath());
+        manager.init();
         return manager;
     }
 }

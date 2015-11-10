@@ -1,6 +1,5 @@
 package com.a1s.cache;
 
-import org.apache.commons.configuration.ConfigurationException;
 import org.easymock.EasyMockRunner;
 import org.easymock.Mock;
 import org.easymock.TestSubject;
@@ -22,9 +21,12 @@ public class CacheManagerImplTest {
     @Mock
     FileSysCacheManager fsManager;
     @Test
-    public void test() throws ConfigurationException {
+    public void test()  {
         cache.setMaxSizeFirstLevel(10);
         cache.setMaxSizeSecondLevel(10);
+        cache.setPath("tmp");
+        cache.setDelay(1);
+        cache.init();
         manager.putObject(anyObject(), anyObject());
         expectLastCall().times(10);
         fsManager.putObject(anyObject(), anyObject());
@@ -42,11 +44,12 @@ public class CacheManagerImplTest {
         verify(fsManager,manager);
     }
     @Test
-    public void testExpired() throws ConfigurationException, InterruptedException {
+    public void testExpired() throws   InterruptedException {
         cache.setMaxSizeFirstLevel(10);
         cache.setMaxSizeSecondLevel(10);
         cache.setTtl(1000);
         cache.setDelay(1);
+        cache.setPath("tmp");
         cache.init();
         TestObject obj = new TestObject("1");
         manager.putObject("1", obj);
