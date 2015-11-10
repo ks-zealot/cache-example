@@ -100,10 +100,10 @@ public final class XmlConfig {
             switch (childTag){
                 case "filesystemPath":
                     return "tmp";
-                case "delay":
-                    return "10";
-                default:
+                case "maxSizeSecondLevel":
                     return "100";
+                default:
+                    return "10";
 
             }
         }

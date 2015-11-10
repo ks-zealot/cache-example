@@ -48,7 +48,7 @@ public final class Cache {
             defaultBean = new CacheBean();
             defaultBean.setPath("tmp");
             defaultBean.setTtl(1000);
-            defaultBean.setDelay(1000);
+            defaultBean.setDelay(10);
             defaultBean.setMaxSecondLevelSize(100);
             defaultBean.setMaxFirstLevelSize(10);
             isInit = true;

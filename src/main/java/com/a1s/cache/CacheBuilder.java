@@ -55,4 +55,5 @@ build cache manager implementation from passed params
         bean.setTtl(ttl);
         return Cache.getInstance().getCache(bean);
     }
+
 }
