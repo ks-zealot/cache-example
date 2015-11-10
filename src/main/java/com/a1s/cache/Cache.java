@@ -27,7 +27,7 @@ public class Cache {
     private CacheBean defaultBean;
     public CacheManager getCache(String name) throws ConfigurationException, ParserConfigurationException, SAXException, IOException {
         if (!isInit) {
-            config = new XmlConfig("cache.xml");
+            config = new XmlConfig();
             defaultBean = new CacheBean();
             defaultBean.setPath("tmp");
             defaultBean.setTtl(1000);

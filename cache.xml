@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+    <caches>
+        <cache>
+            <name>cache1</name>
+            <maxSizeFirstLevel>100</maxSizeFirstLevel>
+            <maxSizeSecondLevel>10000</maxSizeSecondLevel>
+            <ttl>100</ttl>
+            <filesystemPath>tmp</filesystemPath>
+            <delay>10</delay>
+        </cache>
+        <cache>
+            <name>cache2</name>
+            <maxSizeFirstLevel>100</maxSizeFirstLevel>
+            <maxSizeSecondLevel>10000</maxSizeSecondLevel>
+            <ttl>100</ttl>
+            <filesystemPath>tmp</filesystemPath>
+            <delay>10</delay>
+        </cache>
+        <cache>
+            <name>cache3</name>
+            <maxSizeFirstLevel>100</maxSizeFirstLevel>
+            <maxSizeSecondLevel>10000</maxSizeSecondLevel>
+            <ttl>100</ttl>
+            <filesystemPath>tmp</filesystemPath>
+            <delay>10</delay>
+        </cache>
+    </caches>

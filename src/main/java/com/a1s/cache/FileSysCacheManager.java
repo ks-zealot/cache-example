@@ -33,7 +33,11 @@ public class FileSysCacheManager implements CacheManager {
         clearer.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-            clearAbandonedFiles();
+            try {
+                clearAbandonedFiles();
+            } catch (Exception e) {
+                //do nothing, will remove next time
+            }
             }
         },5, 5, TimeUnit.SECONDS);
     }
@@ -164,15 +168,7 @@ public class FileSysCacheManager implements CacheManager {
 
     @Override
     public boolean delete(Object key) {
-//        try {
-
           return  keys.remove(key);
-//            Path filePath = Paths.get(path + File.separator + key);
-//            return Files.deleteIfExists(filePath);
-//        } catch (IOException e) {
-//            log.error("error", e);
-//            return false;
-//        }
 
     }
 

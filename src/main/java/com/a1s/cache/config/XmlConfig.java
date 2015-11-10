@@ -2,7 +2,6 @@ package com.a1s.cache.config;
 
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.CharacterData;
@@ -19,25 +18,28 @@ import java.io.IOException;
  * Created by y.lybarskiy on 10.11.2015.
  */
 public class XmlConfig {
-    Document document = null;
-private static Logger log = LoggerFactory.getLogger(XmlConfig.class);
-    public XmlConfig(String path) throws ConfigurationException, IOException, SAXException, ParserConfigurationException {
-      XmlLocator locator = new XmlLocator();
-        String conf = locator.locate();
-        if (conf == null) {
-            log.debug("could not find cache.xml, use default file");
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            document = builder.parse(getClass().getResourceAsStream("resources/cache.xml"));
-        } else {
-            File f = new File(conf);
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            document = builder.parse(f);
-        }
+    private Document document = null;
+    private static Logger log = LoggerFactory.getLogger(XmlConfig.class);
+    private String location = null;
+    public XmlConfig()   {
+        XmlLocator locator = new XmlLocator();
+        location = locator.locate();
+
 
     }
-
+public void init() throws IOException, SAXException, ParserConfigurationException {
+    if (location == null) {
+        log.debug("could not find cache.xml, use default file");
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        document = builder.parse(getClass().getResourceAsStream("resources/cache.xml"));
+    } else {
+        File f = new File(location);
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        document = builder.parse(f);
+    }
+}
     public void getByName(String name) {
         Element root = document.getDocumentElement();
         NodeList nodeList = root.getElementsByTagName("cache");
@@ -81,23 +83,20 @@ private static Logger log = LoggerFactory.getLogger(XmlConfig.class);
     }
 
 
-public CacheBean getCacheBean(String name) {
-    int count =  getChildCount("caches", 0, "cache");
-    for (int i = 0; i< count; i++){
-         if ( name.equals(getChildValue("cache", i, "name", 0))){
-             CacheBean bean = new CacheBean();
-             bean.setDelay(Integer.parseInt(getChildValue("cache", i, "delay", 0)));
-             bean.setPath( getChildValue("cache", i, "filesystemPath", 0) );
-             bean.setMaxSecondLevelSize(Integer.parseInt(getChildValue("cache", i, "maxSizeSecondLevel", 0)));
-             bean.setMaxFirstLevelSize(Integer.parseInt(getChildValue("cache", i, "maxSizeFirstLevel", 0)));
-             bean.setTtl(Long.parseLong(getChildValue("cache", i, "ttl", 0)));
-             return bean;
-         }
+    public CacheBean getCacheBean(String name) {
+        int count = getChildCount("caches", 0, "cache");
+        for (int i = 0; i < count; i++) {
+            if (name.equals(getChildValue("cache", i, "name", 0))) {
+                CacheBean bean = new CacheBean();
+                bean.setDelay(Integer.parseInt(getChildValue("cache", i, "delay", 0)));
+                bean.setPath(getChildValue("cache", i, "filesystemPath", 0));
+                bean.setMaxSecondLevelSize(Integer.parseInt(getChildValue("cache", i, "maxSizeSecondLevel", 0)));
+                bean.setMaxFirstLevelSize(Integer.parseInt(getChildValue("cache", i, "maxSizeFirstLevel", 0)));
+                bean.setTtl(Long.parseLong(getChildValue("cache", i, "ttl", 0)));
+                return bean;
+            }
+        }
+        return null;
     }
-    return null;
-}
-    public static void main(String[] args) throws SAXException, ParserConfigurationException, ConfigurationException, IOException {
-        XmlConfig config = new XmlConfig("cache.xml");
-        CacheBean bean = config.getCacheBean("cache1");
-    }
+
 }
