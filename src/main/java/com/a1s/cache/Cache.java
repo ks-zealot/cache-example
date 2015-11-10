@@ -19,15 +19,26 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by y.lybarskiy on 10.11.2015.
  */
-public class Cache {
+public final class Cache {
     private static boolean isInit = false;
     private XmlConfig config;
     private static Logger log = LoggerFactory.getLogger(Cache.class);
     private Map<String, CacheManagerImpl> cachces = new ConcurrentHashMap<>();
     private CacheBean defaultBean;
+    private static Cache cache = new Cache();
+    private Cache(){
+
+    }
+    public Cache getInstance ()
+    {
+        return cache;
+    }
+
+
     public CacheManager getCache(String name) throws ConfigurationException, ParserConfigurationException, SAXException, IOException {
         if (!isInit) {
             config = new XmlConfig();
+            config.init();
             defaultBean = new CacheBean();
             defaultBean.setPath("tmp");
             defaultBean.setTtl(1000);
