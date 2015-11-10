@@ -40,16 +40,6 @@ public void init() throws IOException, SAXException, ParserConfigurationExceptio
         document = builder.parse(f);
     }
 }
-    public void getByName(String name) {
-        Element root = document.getDocumentElement();
-        NodeList nodeList = root.getElementsByTagName("cache");
-        for (int x = 0, size = nodeList.getLength(); x < size; x++) {
-            if (nodeList.item(x).getAttributes().getNamedItem("name").getNodeValue().equals(name)) {
-                CacheBean bean = new CacheBean();
-                System.out.println(nodeList.item(x).getAttributes().getNamedItem("name").getNodeValue());
-            }
-        }
-    }
 
     public int getChildCount(String parentTag, int parentIndex, String childTag) {
         NodeList list = document.getElementsByTagName(parentTag);
